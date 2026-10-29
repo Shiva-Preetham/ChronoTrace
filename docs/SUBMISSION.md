@@ -6,6 +6,12 @@ Before submitting, update the "Results" lines if a real benchmark has been run.
 ## Project name
 ChronoTrace
 
+## Track and theme
+- Track: **Indie developer** (solo student builder). Judged on creativity, technical
+  ambition, and whether it works.
+- Theme: **Build for Your World**: return-swap fraud is a problem Indian marketplace sellers
+  face first-hand, and the project brings Meta's models to it.
+
 ## One-liner
 ChronoTrace watches a seller's packing video and the buyer's return-unboxing video and
 reports, with timestamped evidence, whether the item that came back is the item that left.
@@ -54,6 +60,20 @@ before the box is sealed, the verdict is "packing not proven", whatever the retu
 - Deterministic verdicts: every result traces to named checks with timestamps; models only
   provide evidence.
 - No generative imagery anywhere in the evidence.
+
+## Against the indie judging criteria
+- **Creativity:** uses footage sellers already record but never watch, and checks the
+  seller's evidence as strictly as the buyer's.
+- **Technical ambition:** three Meta models (SAM 3.1 video tracking, Muse Spark
+  vision with strict JSON output, Muse Voice Transcribe), event inference that survives
+  SAM's id loss on occlusion, phone rotation handling, QR decoding, hashing, and a web demo.
+- **Whether it works:** 42 offline tests; the three demo scenarios load from saved reports
+  with no network, so they don't depend on the API being up. Live-API and real-footage
+  results: see Results.
+
+## How it was built
+Built solo during the hackathon (all commits from Oct 29, 2026 onward), with help from an AI
+coding assistant (Claude Code); commits it helped with are marked as co-authored.
 
 ## Challenges
 - Inferring "the item went into the box" when the item disappears from view at exactly that

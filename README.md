@@ -2,6 +2,9 @@
 
 **Did the item that came back match the item that left?**
 
+Built for the Meta Global AI Developer Hackathon (indie developer track, theme: Build for
+Your World).
+
 Indian marketplace sellers lose money to return-swap fraud: a buyer returns a different,
 older or empty item, and without proof of what was shipped the claim goes the buyer's way.
 Tools like EasyEcom and Unicommerce already record packing videos and link them to orders,

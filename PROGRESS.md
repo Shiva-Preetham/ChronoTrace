@@ -12,8 +12,11 @@ In order of importance:
   Then: `python -m chronotrace bench data/clips/manifest.csv`, and
   `python -m chronotrace prepare-demo --real data/clips/manifest.csv out/bench` to put the
   real cases in the web demo.
-- Read the hackathon's Official Rules (prior-code reuse, submission format, required model
-  usage) and tell me anything that changes scope.
+- Open the Official Rules from your logged-in participant dashboard (they are not public:
+  the event page doesn't link them and the Cerebral Valley pages need sign-in) and check
+  four things: prior-code reuse, submission format (video length, repo, form fields),
+  whether AI coding assistants must be disclosed, and whether a licence is required. Tell
+  me anything that differs from `docs/SUBMISSION.md`.
 - Record the 2-minute demo video (`docs/DEMO_SCRIPT.md`) and submit (`docs/SUBMISSION.md`).
 - Decide whether `CLAUDE.md` should be committed; it is untracked and has not been pushed.
 
@@ -39,3 +42,10 @@ In order of importance:
   web stack. Final check: fresh Python 3.13 venv from tracked files, `pip install -r
   requirements.txt`, 42 tests pass, `serve` starts and all three scenarios load with no
   `MODEL_API_KEY`. Unverified: anything against the live API.
+- **Rules check, Oct 29.** Checked against the public event page and the Cerebral Valley
+  event page (the Official Rules weren't reachable without sign-in). Consistent: indie
+  track, one track per project, Meta Model API models used, deadline Nov 4 9:00 PM ET
+  (EST, = Nov 5 7:30 AM IST), all commits made after the Oct 26 start, repo public.
+  Added track, theme, judging-criteria mapping and an AI-assistant disclosure to
+  `docs/SUBMISSION.md`; hackathon line in the README. Open: no LICENSE file (rules don't
+  say; your call).
