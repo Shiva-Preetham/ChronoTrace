@@ -21,7 +21,7 @@ class Result:
 
 
 def run(packing: Path, returned: Path, order_id: str, s: Settings, sam: CachedSam,
-        spark=None, log=print) -> Result:
+        spark=None, log=print, voice=None) -> Result:
     s.out_dir.mkdir(parents=True, exist_ok=True)
     vi_a, vi_b = video.info(packing), video.info(returned)
     log(f"Packing: {packing.name} {vi_a.width}x{vi_a.height} {vi_a.fps:.0f}fps {vi_a.seconds:.1f}s")
@@ -39,6 +39,12 @@ def run(packing: Path, returned: Path, order_id: str, s: Settings, sam: CachedSa
     ret = analyze_return(tracks["b", "box"], tracks["b", "item"], tracks["b", "seal"], vi_b.fps, s)
     integrity.add_integrity_warnings(pack, packing, tracks["a", "box"], s)
     integrity.add_integrity_warnings(ret, returned, tracks["b", "box"], s)
+    if voice is not None:
+        from .voice import order_check
+
+        transcript = voice.transcribe(packing, s.out_dir / "audio")
+        pack.checks.append(order_check(transcript, order_id, vi_a.fps))
+        log(f"  Spoken order id: {pack.checks[-1].detail}")
 
     # Keyframes: packing -> before the item went in; return -> after it was seen in the box.
     ins = pack.events.get("inserted")
@@ -58,7 +64,8 @@ def run(packing: Path, returned: Path, order_id: str, s: Settings, sam: CachedSa
         log(f"  Muse Spark: same_unit={spark_result.get('same_unit')}")
 
     v = decide(pack, ret, qr_a, qr_b, spark_result)
-    spend = sam.estimated_spend + (getattr(spark, "estimated_spend", 0.0) or 0.0)
+    spend = (sam.estimated_spend + (getattr(spark, "estimated_spend", 0.0) or 0.0)
+             + (getattr(voice, "estimated_spend", 0.0) or 0.0))
     videos = {role: {"file": p.name, "fps": vi.fps, "n_frames": vi.n_frames,
                      "seconds": round(vi.seconds, 3), "width": vi.width, "height": vi.height,
                      "rotation": vi.rotation}

@@ -80,6 +80,7 @@ def main() -> None:
     v.add_argument("--seal", default=Settings.seal_prompt)
     v.add_argument("--out", type=Path, default=Path("out"))
     v.add_argument("--no-spark", action="store_true")
+    v.add_argument("--no-voice", action="store_true", help="skip the spoken order id check")
     v.add_argument("--refresh", action="store_true", help="ignore all cached SAM output")
     v.add_argument("--refresh-prompt", action="append", default=[], metavar="PROMPT",
                    help="re-query SAM for this prompt only (repeatable)")
@@ -120,16 +121,23 @@ def main() -> None:
             demo.package_real(*args.real)
         return
 
+    from .api import ApiError, BudgetExceeded
     from .identity import SparkComparator
     from .pipeline import run
     from .sam import CachedSam, MetaSam
+    from .voice import MetaTranscriber
 
     s = Settings(container_prompt=args.box, item_prompt=args.item, seal_prompt=args.seal,
                  out_dir=args.out / args.order, use_spark=not args.no_spark)
     s.cache_dir.mkdir(parents=True, exist_ok=True)
-    sam = CachedSam(MetaSam(s.cache_dir), s.cache_dir, refresh=args.refresh)
-    spark = SparkComparator(s, s.cache_dir) if s.use_spark else None
-    res = run(args.packing, args.returned, args.order, s, sam, spark)
+    try:
+        sam = CachedSam(MetaSam(s.cache_dir), s.cache_dir, refresh=args.refresh,
+                        refresh_prompts=set(args.refresh_prompt))
+        spark = SparkComparator(s, s.cache_dir) if s.use_spark else None
+        voice = None if args.no_voice else MetaTranscriber(s.cache_dir)
+        res = run(args.packing, args.returned, args.order, s, sam, spark, voice=voice)
+    except (ApiError, BudgetExceeded) as e:
+        sys.exit(f"Stopped: {e}")
     print(f"\nReport: {res.report_path}\nEvidence card: {res.card_path}")
 
 

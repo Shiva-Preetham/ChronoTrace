@@ -14,6 +14,7 @@ SAM_PRICE_PER_FRAME = 0.20 / 1000
 SAM_MIN_BILLED_FRAMES = 50
 SPARK_PRICE_IN = 1.25 / 1_000_000
 SPARK_PRICE_OUT = 4.25 / 1_000_000
+TRANSCRIBE_PRICE_PER_HOUR = 0.18
 
 # Hard stop: refuse new API calls once this process's estimated spend would pass this.
 SESSION_BUDGET_USD = 10.0

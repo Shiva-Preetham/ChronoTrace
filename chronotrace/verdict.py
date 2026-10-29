@@ -40,6 +40,9 @@ def decide(pack: VideoFindings, ret: VideoFindings, qr_a: dict[str, int], qr_b: 
             return Verdict("PACKING_NOT_PROVEN", [f"Packing: {c.detail}"], notes)
     if (c := pack.check("box_sealed")) and c.passed is False:
         notes.append(f"Packing: {c.detail}")
+    # A spoken order id that doesn't match is worth a look, but never decides the verdict.
+    if (c := pack.check("order_id_spoken")) and c.passed is False:
+        notes.append(f"Packing: {c.detail}")
 
     for name in ("seal_on_arrival", "item_from_box"):
         c = ret.check(name)

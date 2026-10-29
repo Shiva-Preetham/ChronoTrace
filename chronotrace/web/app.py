@@ -71,6 +71,7 @@ def create_app(demo_root: Path = demo.DEMO_DIR, work_root: Path = Path("out/web"
         from ..identity import SparkComparator
         from ..pipeline import run
         from ..sam import CachedSam, MetaSam
+        from ..voice import MetaTranscriber
 
         if not os.environ.get("MODEL_API_KEY"):
             raise HTTPException(503, "MODEL_API_KEY is not set on this server, so new videos "
@@ -96,7 +97,7 @@ def create_app(demo_root: Path = demo.DEMO_DIR, work_root: Path = Path("out/web"
         try:
             sam = CachedSam(MetaSam(cache_dir), cache_dir)
             spark = SparkComparator(s, cache_dir) if s.use_spark else None
-            run(paths[0], paths[1], order_id, s, sam, spark)
+            run(paths[0], paths[1], order_id, s, sam, spark, voice=MetaTranscriber(cache_dir))
         except (api.ApiError, api.BudgetExceeded) as e:
             raise HTTPException(502, str(e)) from e
         meta = {"id": job, "title": "Your upload", "description": f"Order {order_id}",

@@ -74,7 +74,7 @@ def _miss_reason(rep: dict) -> str:
 
 
 def run_cases(cases: list[Case], out_dir: Path, make_sam: Callable, make_spark: Callable,
-              base: Settings | None = None, log=print) -> tuple[list[Outcome], str | None]:
+              base: Settings | None = None, log=print, voice=None) -> tuple[list[Outcome], str | None]:
     """Run each case. Returns outcomes and, if the budget stopped the run, why."""
     outcomes: list[Outcome] = []
     for case in cases:
@@ -86,7 +86,8 @@ def run_cases(cases: list[Case], out_dir: Path, make_sam: Callable, make_spark: 
         sam = make_sam(s)
         spark = make_spark(s, case)
         try:
-            res = run(case.packing, case.returned, case.order_id, s, sam, spark, log=lambda *_: None)
+            res = run(case.packing, case.returned, case.order_id, s, sam, spark, log=lambda *_: None,
+                      voice=voice)
             rep = res.report
             out = Outcome(case, rep["status"], "" if rep["status"] == case.expected
                           else _miss_reason(rep), rep["estimated_api_cost_usd"])
@@ -138,6 +139,7 @@ def write_results(outcomes: list[Outcome], out_dir: Path, title: str,
 def bench_manifest(manifest: Path, out_dir: Path, use_spark: bool = True, log=print):
     from .identity import SparkComparator
     from .sam import CachedSam, MetaSam
+    from .voice import MetaTranscriber
 
     cases = read_manifest(manifest)
     if not cases:
@@ -146,11 +148,12 @@ def bench_manifest(manifest: Path, out_dir: Path, use_spark: bool = True, log=pr
     base.cache_dir.mkdir(parents=True, exist_ok=True)
     backend = MetaSam(base.cache_dir, log=log)
     spark = SparkComparator(base, base.cache_dir, log=log) if use_spark else None
+    voice = MetaTranscriber(base.cache_dir, log=log)
 
     def make_sam(s: Settings):
         return CachedSam(backend, s.cache_dir)
 
-    outcomes, stopped = run_cases(cases, out_dir, make_sam, lambda s, c: spark, base, log)
+    outcomes, stopped = run_cases(cases, out_dir, make_sam, lambda s, c: spark, base, log, voice)
     return write_results(outcomes, out_dir, f"Benchmark: {manifest}", stopped)
 
 

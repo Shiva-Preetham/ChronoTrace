@@ -39,6 +39,8 @@ def _retryable(e: Exception) -> bool:
 
     if isinstance(e, (openai.APIConnectionError, openai.APITimeoutError)):
         return True
+    if getattr(e, "retryable", False):       # plain-HTTP callers (voice.py) mark their own
+        return True
     s = _status(e)
     return s == 429 or (s is not None and s >= 500)
 
