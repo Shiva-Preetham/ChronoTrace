@@ -4,6 +4,8 @@
   python -m chronotrace verify packing.mp4 return.mp4 --order FK-88314 --item "chocolate bar"
   python -m chronotrace verify packing.mp4 return.mp4 --no-spark      # SAM + QR only
   python -m chronotrace verify a.mp4 b.mp4 --refresh-prompt "packing tape"   # re-query one prompt
+  python -m chronotrace bench data/clips/manifest.csv
+  python -m chronotrace bench --synthetic                              # offline, no key needed
 """
 
 from __future__ import annotations
@@ -48,6 +50,21 @@ def cmd_check() -> None:
         print(line)
 
 
+def cmd_bench(args) -> None:
+    from . import api, bench
+
+    try:
+        if args.synthetic:
+            csv_path, summary = bench.bench_synthetic(args.out or Path("out/bench_synthetic"))
+        else:
+            csv_path, summary = bench.bench_manifest(args.manifest, args.out or Path("out/bench"),
+                                                     use_spark=not args.no_spark)
+    except (api.ApiError, ValueError, FileNotFoundError) as e:
+        sys.exit(f"Stopped: {e}")
+    print(f"\nResults: {csv_path}\nSummary: {summary}\n")
+    print(summary.read_text(encoding="utf-8"))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(prog="chronotrace")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -64,11 +81,20 @@ def main() -> None:
     v.add_argument("--refresh", action="store_true", help="ignore all cached SAM output")
     v.add_argument("--refresh-prompt", action="append", default=[], metavar="PROMPT",
                    help="re-query SAM for this prompt only (repeatable)")
+    b = sub.add_parser("bench", help="run every case in a manifest and score the verdicts")
+    b.add_argument("manifest", type=Path, nargs="?", default=Path("data/clips/manifest.csv"))
+    b.add_argument("--synthetic", action="store_true",
+                   help="generated clips + mock SAM, no API calls")
+    b.add_argument("--out", type=Path, default=None)
+    b.add_argument("--no-spark", action="store_true")
     args = ap.parse_args()
     load_dotenv()
 
     if args.cmd == "check":
         cmd_check()
+        return
+    if args.cmd == "bench":
+        cmd_bench(args)
         return
 
     from .identity import SparkComparator

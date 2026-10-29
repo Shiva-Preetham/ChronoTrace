@@ -21,3 +21,4 @@
   pass (rotation tested on a real ffmpeg-flagged clip). Unverified: everything against the
   real API (no key); `check` not yet run.
 - **Phase B (tuning), Oct 29.** Skipped: no real clips and no API key. Created `data/clips/` with a template `manifest.csv` and filming guide. No thresholds changed.
+- **Phase C (bench), Oct 29.** Done: `python -m chronotrace bench [manifest]` writes `results.csv` and `summary.md` (cases run, correct, confusion table, reason per miss, estimated cost) to `out/bench/`; stops cleanly at the budget. `--synthetic` runs the 3 generated scenarios with mock SAM and no Spark into `out/bench_synthetic/` (3 of 3, $0; tests plumbing only, not accuracy). Synthetic generator moved into the package. Verified: 24 tests pass. Unverified: real-clip bench (no clips, no key); README results stay "not yet measured".

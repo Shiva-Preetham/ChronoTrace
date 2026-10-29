@@ -156,7 +156,9 @@ class CachedSam:
         if path.exists() and not stale:
             deltas = json.loads(path.read_text())
         else:
-            cost = max(n_frames, SAM_MIN_BILLED_FRAMES) * SAM_PRICE_PER_FRAME
+            # Mock backends set billable = False so offline runs report $0.
+            cost = (max(n_frames, SAM_MIN_BILLED_FRAMES) * SAM_PRICE_PER_FRAME
+                    if getattr(self.backend, "billable", True) else 0.0)
             self.budget.reserve(cost, f"SAM '{prompt}' on {video.name}")
             deltas = self.backend.segment(video, prompt)
             path.write_text(json.dumps(deltas))
