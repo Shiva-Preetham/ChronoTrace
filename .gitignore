@@ -6,3 +6,7 @@ __pycache__/
 .env
 *.mp4
 *.mov
+.venv/
+data/clips/*
+!data/clips/manifest.csv
+!data/clips/README.md

@@ -1,17 +1,43 @@
 """All tunable settings in one place. Change prompts and thresholds here, not in code."""
 
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
 BASE_URL = "https://api.meta.ai/v1"
 SAM_MODEL = "sam-3.1"
-SPARK_MODEL = "muse-spark-1.3"
+DEFAULT_SPARK_MODEL = "muse-spark-1.3"
+TRANSCRIBE_MODEL = "muse-voice-transcribe-1.0"
 
 # Published rates (dev.meta.ai/docs/pricing-rate-limits), used only for cost estimates.
 SAM_PRICE_PER_FRAME = 0.20 / 1000
 SAM_MIN_BILLED_FRAMES = 50
 SPARK_PRICE_IN = 1.25 / 1_000_000
 SPARK_PRICE_OUT = 4.25 / 1_000_000
+
+# Hard stop: refuse new API calls once this process's estimated spend would pass this.
+SESSION_BUDGET_USD = 10.0
+# Retries for 429 / 5xx / network errors: up to this many attempts, doubling the wait.
+API_MAX_ATTEMPTS = 5
+API_BACKOFF_SECONDS = 2.0
+
+
+def spark_model() -> str:
+    """Muse Spark model id. Override with CHRONOTRACE_SPARK_MODEL if your key lists a
+    different muse-spark-* id (`python -m chronotrace check` prints which)."""
+    return os.environ.get("CHRONOTRACE_SPARK_MODEL") or DEFAULT_SPARK_MODEL
+
+
+def load_dotenv(path: Path = Path(".env")) -> None:
+    """Read KEY=VALUE lines from an untracked .env file. Real env vars win."""
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
 
 @dataclass

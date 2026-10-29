@@ -11,15 +11,14 @@ from __future__ import annotations
 import base64
 import heapq
 import json
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import cv2
 import numpy as np
 
-from . import video
-from .config import BASE_URL, SPARK_MODEL, SPARK_PRICE_IN, SPARK_PRICE_OUT, Settings
+from . import api, video
+from .config import SPARK_PRICE_IN, SPARK_PRICE_OUT, Settings, spark_model
 from .tracks import Det, Track
 
 
@@ -31,6 +30,7 @@ class Keyframe:
 
 
 def _crop(frame: np.ndarray, d: Det, pad: float = 0.15) -> np.ndarray:
+    frame = video.match_aspect(frame, d.w, d.h)
     H, W = frame.shape[:2]
     x1, y1, x2, y2 = d.scaled(W, H)
     px, py = int((x2 - x1) * pad), int((y2 - y1) * pad)
@@ -138,27 +138,49 @@ def _data_url(img: np.ndarray, size: int = 512) -> str:
     return "data:image/jpeg;base64," + base64.b64encode(buf.tobytes()).decode()
 
 
-class SparkComparator:
-    def __init__(self, s: Settings, cache_dir: Path, api_key: str | None = None):
-        from openai import OpenAI
+# Rough token estimate for the budget guard: images at 512 px plus prompt and answer.
+SPARK_EST_TOKENS_PER_IMAGE = 1200
+SPARK_EST_OUTPUT_TOKENS = 600
 
-        key = api_key or os.environ.get("MODEL_API_KEY")
-        if not key:
-            raise RuntimeError("MODEL_API_KEY is not set")
-        self.client = OpenAI(base_url=BASE_URL, api_key=key)
+
+class SparkComparator:
+    def __init__(self, s: Settings, cache_dir: Path, api_key: str | None = None,
+                 budget: api.Budget | None = None, log=print):
+        self.client = api.client(api_key)
         self.s = s
         self.cache_dir = cache_dir
+        self.model = spark_model()
+        self.budget = budget or api.SESSION
         self.estimated_spend = 0.0
+        self.log = log
+
+    def _create(self, kwargs: dict):
+        try:
+            return self.client.chat.completions.create(**kwargs)
+        except Exception as e:  # unsupported reasoning_effort -> retry without it
+            if "reasoning" in str(e).lower() and "reasoning_effort" in kwargs:
+                kwargs.pop("reasoning_effort")
+                return self.client.chat.completions.create(**kwargs)
+            raise
+
+    def _fallback_model(self) -> str | None:
+        ids = [m.id for m in api.with_retries(self.client.models.list, "List models", log=self.log)]
+        alt = api.pick_spark_model(ids, self.model)
+        return alt if alt and alt != self.model else None
 
     def compare(self, shipped: list[Keyframe], returned: list[Keyframe], cache_key: str) -> dict:
         path = self.cache_dir / f"spark_{cache_key}.json"
         if path.exists():
             return json.loads(path.read_text())
+        n_img = len(shipped) + len(returned)
+        est = (n_img * SPARK_EST_TOKENS_PER_IMAGE * SPARK_PRICE_IN
+               + SPARK_EST_OUTPUT_TOKENS * SPARK_PRICE_OUT)
+        self.budget.reserve(est, "Muse Spark comparison")
         content = [{"type": "text", "text": SPARK_PROMPT.format(na=len(shipped), nb=len(returned))}]
         for kf in shipped + returned:
             content.append({"type": "image_url", "image_url": {"url": _data_url(kf.crop)}})
         kwargs = dict(
-            model=SPARK_MODEL,
+            model=self.model,
             messages=[{"role": "user", "content": content}],
             response_format={"type": "json_schema",
                              "json_schema": {"name": "return_check", "strict": True,
@@ -166,17 +188,23 @@ class SparkComparator:
         )
         if self.s.spark_reasoning_effort:
             kwargs["reasoning_effort"] = self.s.spark_reasoning_effort
+        what = f"Muse Spark ({self.model})"
         try:
-            resp = self.client.chat.completions.create(**kwargs)
-        except Exception as e:  # unsupported reasoning_effort -> retry without it
-            if "reasoning" in str(e).lower() and "reasoning_effort" in kwargs:
-                kwargs.pop("reasoning_effort")
-                resp = self.client.chat.completions.create(**kwargs)
-            else:
+            resp = api.with_retries(lambda: self._create(kwargs), what, log=self.log)
+        except api.ApiError as e:
+            alt = self._fallback_model() if getattr(e.__cause__, "status_code", None) == 404 else None
+            if not alt:
                 raise
+            self.log(f"  {self.model} not available on this key; using {alt}")
+            self.model = kwargs["model"] = alt
+            resp = api.with_retries(lambda: self._create(kwargs), f"Muse Spark ({alt})", log=self.log)
         result = json.loads(resp.choices[0].message.content)
+        result["model"] = self.model
+        cost = est
         if resp.usage:
-            self.estimated_spend += (resp.usage.prompt_tokens * SPARK_PRICE_IN
-                                     + resp.usage.completion_tokens * SPARK_PRICE_OUT)
+            cost = (resp.usage.prompt_tokens * SPARK_PRICE_IN
+                    + resp.usage.completion_tokens * SPARK_PRICE_OUT)
+        self.budget.add(cost)
+        self.estimated_spend += cost
         path.write_text(json.dumps(result, indent=2))
         return result

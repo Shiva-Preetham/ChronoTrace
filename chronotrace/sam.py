@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import re
 from pathlib import Path
 from typing import Protocol
 
-from .config import BASE_URL, SAM_MIN_BILLED_FRAMES, SAM_MODEL, SAM_PRICE_PER_FRAME
+from . import api
+from .config import SAM_MIN_BILLED_FRAMES, SAM_MODEL, SAM_PRICE_PER_FRAME
 from .tracks import Det, Track
 
 FRAME_RE = re.compile(r"^<(\d+)f>")
@@ -65,27 +65,25 @@ class SamBackend(Protocol):
 class MetaSam:
     """Real backend: Meta Model API."""
 
-    def __init__(self, cache_dir: Path, api_key: str | None = None):
-        from openai import OpenAI  # imported here so offline tests don't need a key
-
-        key = api_key or os.environ.get("MODEL_API_KEY")
-        if not key:
-            raise RuntimeError("MODEL_API_KEY is not set")
-        self.client = OpenAI(base_url=BASE_URL, api_key=key)
+    def __init__(self, cache_dir: Path, api_key: str | None = None, log=print):
+        self.client = api.client(api_key)
         self.cache_dir = cache_dir
+        self.log = log
 
-    def _file_id(self, video: Path) -> str:
-        digest = file_sha256(video)
+    def _file_id(self, video: Path, digest: str) -> str:
         id_file = self.cache_dir / f"{digest[:16]}.file_id"
         if id_file.exists():
             return id_file.read_text().strip()
-        with open(video, "rb") as f:
-            fid = self.client.files.create(purpose="user_data", file=f).id
+
+        def upload() -> str:
+            with open(video, "rb") as f:
+                return self.client.files.create(purpose="user_data", file=f).id
+
+        fid = api.with_retries(upload, f"Upload {video.name}", log=self.log)
         id_file.write_text(fid)
         return fid
 
-    def segment(self, video: Path, prompt: str) -> list[str]:
-        file_id = self._file_id(video)
+    def _stream(self, file_id: str, prompt: str) -> list[str]:
         deltas: list[str] = []
         with self.client.responses.stream(
             model=SAM_MODEL,
@@ -102,30 +100,67 @@ class MetaSam:
             for event in stream:
                 if event.type == "response.output_text.delta":
                     deltas.append(event.delta)
+                elif event.type in ("error", "response.failed", "response.incomplete"):
+                    # Raise so nothing partial gets cached.
+                    raise SamStreamError(f"SAM stream ended with '{event.type}': {event}")
         return deltas
+
+    def segment(self, video: Path, prompt: str) -> list[str]:
+        digest = file_sha256(video)
+        file_id = self._file_id(video, digest)
+        what = f"SAM '{prompt}' on {video.name}"
+        try:
+            return api.with_retries(lambda: self._stream(file_id, prompt), what, log=self.log)
+        except api.ApiError as e:
+            # Uploaded files can expire. On a 404, drop the cached file id and upload once more.
+            if getattr(e.__cause__, "status_code", None) != 404:
+                raise
+            (self.cache_dir / f"{digest[:16]}.file_id").unlink(missing_ok=True)
+            file_id = self._file_id(video, digest)
+            return api.with_retries(lambda: self._stream(file_id, prompt), what, log=self.log)
+
+
+class SamStreamError(RuntimeError):
+    pass
+
+
+def prompt_slug(prompt: str) -> str:
+    return re.sub(r"\W+", "_", prompt.lower()).strip("_")
 
 
 class CachedSam:
     """Wraps any backend so each (video, prompt) pair is paid for once.
 
     SAM results vary slightly run to run, so the cache also keeps the demo reproducible.
+    `refresh` re-queries everything; `refresh_prompts` re-queries only those prompts.
+    A failed call raises before anything is written, so errors are never cached.
     """
 
-    def __init__(self, backend: SamBackend, cache_dir: Path, refresh: bool = False):
+    def __init__(self, backend: SamBackend, cache_dir: Path, refresh: bool = False,
+                 refresh_prompts: set[str] | None = None, budget: api.Budget | None = None):
         self.backend = backend
         self.cache_dir = cache_dir
         self.refresh = refresh
+        self.refresh_prompts = {prompt_slug(p) for p in (refresh_prompts or ())}
+        self.budget = budget or api.SESSION
         self.estimated_spend = 0.0
+        self.api_calls = 0
         cache_dir.mkdir(parents=True, exist_ok=True)
 
+    def cache_path(self, video: Path, prompt: str) -> Path:
+        return self.cache_dir / f"{file_sha256(video)[:16]}_{prompt_slug(prompt)}.json"
+
     def track(self, video: Path, prompt: str, n_frames: int) -> Track:
-        digest = file_sha256(video)[:16]
-        slug = re.sub(r"\W+", "_", prompt.lower()).strip("_")
-        path = self.cache_dir / f"{digest}_{slug}.json"
-        if path.exists() and not self.refresh:
+        path = self.cache_path(video, prompt)
+        stale = self.refresh or prompt_slug(prompt) in self.refresh_prompts
+        if path.exists() and not stale:
             deltas = json.loads(path.read_text())
         else:
+            cost = max(n_frames, SAM_MIN_BILLED_FRAMES) * SAM_PRICE_PER_FRAME
+            self.budget.reserve(cost, f"SAM '{prompt}' on {video.name}")
             deltas = self.backend.segment(video, prompt)
             path.write_text(json.dumps(deltas))
-            self.estimated_spend += max(n_frames, SAM_MIN_BILLED_FRAMES) * SAM_PRICE_PER_FRAME
+            self.budget.add(cost)
+            self.estimated_spend += cost
+            self.api_calls += 1
         return Track(prompt, parse_sam_output(deltas))
