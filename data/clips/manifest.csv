@@ -1,0 +1,5 @@
+case_id,packing_file,return_file,order_id,item_prompt,expected_status,notes
+# Lines starting with # are ignored. File paths are relative to this folder. Example rows:
+# genuine_01,genuine_01_pack.mp4,genuine_01_return.mp4,FK-10001,earbuds case,GENUINE_RETURN,same unit back
+# swap_01,swap_01_pack.mp4,swap_01_return.mp4,FK-10002,earbuds case,SWAP_DETECTED,different QR sticker on return
+# fault_01,fault_01_pack.mp4,fault_01_return.mp4,FK-10003,earbuds case,PACKING_NOT_PROVEN,item left beside the box before taping

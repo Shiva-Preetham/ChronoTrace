@@ -5,6 +5,8 @@
 - Set `MODEL_API_KEY` (env var or an untracked `.env` file in the repo root), then run
   `python -m chronotrace check` and paste the output here. No key was available during
   the build, so **nothing has been run against the real API yet**.
+- Film real clips per `data/clips/README.md` (at least 2 per scenario) and fill in
+  `data/clips/manifest.csv`. Phase B tuning and real benchmark numbers wait on this.
 
 ## Log
 
@@ -18,3 +20,4 @@
   `tools/sam_test.py` now shares the pipeline's cache and code. Verified offline: 20 tests
   pass (rotation tested on a real ffmpeg-flagged clip). Unverified: everything against the
   real API (no key); `check` not yet run.
+- **Phase B (tuning), Oct 29.** Skipped: no real clips and no API key. Created `data/clips/` with a template `manifest.csv` and filming guide. No thresholds changed.
