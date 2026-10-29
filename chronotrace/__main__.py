@@ -6,6 +6,8 @@
   python -m chronotrace verify a.mp4 b.mp4 --refresh-prompt "packing tape"   # re-query one prompt
   python -m chronotrace bench data/clips/manifest.csv
   python -m chronotrace bench --synthetic                              # offline, no key needed
+  python -m chronotrace serve                                          # web demo on :8000
+  python -m chronotrace prepare-demo [--real manifest.csv out/bench]   # rebuild demo cases
 """
 
 from __future__ import annotations
@@ -87,6 +89,12 @@ def main() -> None:
                    help="generated clips + mock SAM, no API calls")
     b.add_argument("--out", type=Path, default=None)
     b.add_argument("--no-spark", action="store_true")
+    w = sub.add_parser("serve", help="web demo")
+    w.add_argument("--host", default="127.0.0.1")
+    w.add_argument("--port", type=int, default=8000)
+    d = sub.add_parser("prepare-demo", help="rebuild the preloaded web demo cases (no API calls)")
+    d.add_argument("--real", nargs=2, type=Path, metavar=("MANIFEST", "BENCH_OUT"),
+                   help="also package real cases from an earlier bench run")
     args = ap.parse_args()
     load_dotenv()
 
@@ -95,6 +103,21 @@ def main() -> None:
         return
     if args.cmd == "bench":
         cmd_bench(args)
+        return
+    if args.cmd == "serve":
+        import uvicorn
+
+        from .web.app import create_app
+
+        print(f"ChronoTrace demo on http://{args.host}:{args.port}")
+        uvicorn.run(create_app(), host=args.host, port=args.port)
+        return
+    if args.cmd == "prepare-demo":
+        from .web import demo
+
+        demo.build_synthetic()
+        if args.real:
+            demo.package_real(*args.real)
         return
 
     from .identity import SparkComparator

@@ -29,6 +29,8 @@ class VideoFindings:
     events: dict[str, int | None] = field(default_factory=dict)
     checks: list[Check] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    # (frame, short label) for each warning, so a timeline can place it.
+    warning_frames: list[tuple[int, str]] = field(default_factory=list)
 
     def check(self, name: str) -> Check | None:
         return next((c for c in self.checks if c.name == name), None)

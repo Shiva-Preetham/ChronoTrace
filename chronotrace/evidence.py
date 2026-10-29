@@ -95,14 +95,19 @@ def card(verdict: Verdict, order_id: str, pack: VideoFindings, ret: VideoFinding
 
 def report(verdict: Verdict, order_id: str, pack: VideoFindings, ret: VideoFindings,
            qr_a: dict, qr_b: dict, spark: dict | None, file_hashes: dict, spend: float,
-           kf_a: list[Keyframe], kf_b: list[Keyframe]) -> dict:
+           kf_a: list[Keyframe], kf_b: list[Keyframe], videos: dict | None = None) -> dict:
     def findings(f: VideoFindings) -> dict:
         return {
-            "events": {k: (None if v is None else {"frame": v, "time": f.t(v)})
+            "events": {k: (None if v is None else {"frame": v, "time": f.t(v),
+                                                   "seconds": round(v / f.fps, 3)})
                        for k, v in f.events.items()},
             "checks": [{"name": c.name, "passed": c.passed, "detail": c.detail,
-                        "time": f.t(c.frame) if c.frame is not None else None} for c in f.checks],
+                        "time": f.t(c.frame) if c.frame is not None else None,
+                        "seconds": round(c.frame / f.fps, 3) if c.frame is not None else None}
+                       for c in f.checks],
             "warnings": f.warnings,
+            "warning_marks": [{"frame": fr, "seconds": round(fr / f.fps, 3), "label": label}
+                              for fr, label in f.warning_frames],
         }
     return {
         "order_id": order_id,
@@ -116,8 +121,20 @@ def report(verdict: Verdict, order_id: str, pack: VideoFindings, ret: VideoFindi
         "visual_comparison": spark,
         "keyframes": {"shipped": [k.frame for k in kf_a], "returned": [k.frame for k in kf_b]},
         "sha256": file_hashes,
+        "videos": videos or {},
         "estimated_api_cost_usd": round(spend, 4),
     }
+
+
+def save_crops(kf_a: list[Keyframe], kf_b: list[Keyframe], out_dir: Path) -> dict[str, str]:
+    """Best real crop from each video, as JPEG files next to the report."""
+    saved = {}
+    for name, kfs in (("shipped", kf_a), ("returned", kf_b)):
+        if kfs:
+            path = out_dir / f"{name}_crop.jpg"
+            cv2.imwrite(str(path), kfs[0].crop)
+            saved[name] = path.name
+    return saved
 
 
 def save(rep: dict, out_dir: Path) -> Path:

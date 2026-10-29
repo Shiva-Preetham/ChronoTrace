@@ -1,0 +1,166 @@
+{
+  "order_id": "FK-88314",
+  "status": "GENUINE_RETURN",
+  "headline": "Returned item matches the shipped item",
+  "reasons": [
+    "QR CT-A7F3K matches on both videos"
+  ],
+  "needs_review": [],
+  "packing": {
+    "events": {
+      "inserted": {
+        "frame": 86,
+        "time": "02.87s",
+        "seconds": 2.867
+      },
+      "sealed": {
+        "frame": 150,
+        "time": "05.00s",
+        "seconds": 5.0
+      }
+    },
+    "checks": [
+      {
+        "name": "box_detected",
+        "passed": true,
+        "detail": "'cardboard box' tracked",
+        "time": null,
+        "seconds": null
+      },
+      {
+        "name": "item_inserted",
+        "passed": true,
+        "detail": "Item entered the box at 02.87s then hidden inside the box",
+        "time": "02.87s",
+        "seconds": 2.867
+      },
+      {
+        "name": "box_sealed",
+        "passed": true,
+        "detail": "Seal applied on the box at 05.00s",
+        "time": "05.00s",
+        "seconds": 5.0
+      },
+      {
+        "name": "inserted_before_sealed",
+        "passed": true,
+        "detail": "Inserted 02.87s, sealed 05.00s",
+        "time": "05.00s",
+        "seconds": 5.0
+      },
+      {
+        "name": "not_removed_after_seal",
+        "passed": true,
+        "detail": "Item not seen outside the box after sealing",
+        "time": null,
+        "seconds": null
+      }
+    ],
+    "warnings": [],
+    "warning_marks": []
+  },
+  "return": {
+    "events": {
+      "seal_seen": {
+        "frame": 0,
+        "time": "00.00s",
+        "seconds": 0.0
+      },
+      "first_inside": {
+        "frame": 40,
+        "time": "01.33s",
+        "seconds": 1.333
+      },
+      "removed": {
+        "frame": 77,
+        "time": "02.57s",
+        "seconds": 2.567
+      }
+    },
+    "checks": [
+      {
+        "name": "box_detected",
+        "passed": true,
+        "detail": "'cardboard box' tracked",
+        "time": null,
+        "seconds": null
+      },
+      {
+        "name": "seal_on_arrival",
+        "passed": true,
+        "detail": "Seal visible on the box at 00.00s",
+        "time": "00.00s",
+        "seconds": 0.0
+      },
+      {
+        "name": "item_from_box",
+        "passed": true,
+        "detail": "Item seen inside the box at 01.33s, taken out at 02.57s",
+        "time": "01.33s",
+        "seconds": 1.333
+      }
+    ],
+    "warnings": [],
+    "warning_marks": []
+  },
+  "qr": {
+    "shipped": {
+      "CT-A7F3K": 0
+    },
+    "returned": {
+      "CT-A7F3K": 48
+    }
+  },
+  "visual_comparison": null,
+  "keyframes": {
+    "shipped": [
+      0,
+      39,
+      57,
+      58,
+      1,
+      56,
+      29,
+      38
+    ],
+    "returned": [
+      48,
+      54,
+      111,
+      114,
+      53,
+      121,
+      175,
+      133
+    ]
+  },
+  "sha256": {
+    "genuine_pack.mp4": "6108e4936ed2fc6a301feddb800ff87f28211b069a8949d89edaaea851b2b515",
+    "genuine_return.mp4": "805a24a975872720feeee7e68e017b067d87c1f46115ff1dbcd03608bca6189d"
+  },
+  "videos": {
+    "packing": {
+      "file": "genuine_pack.mp4",
+      "fps": 30.0,
+      "n_frames": 180,
+      "seconds": 6.0,
+      "width": 640,
+      "height": 480,
+      "rotation": 0
+    },
+    "return": {
+      "file": "genuine_return.mp4",
+      "fps": 30.0,
+      "n_frames": 180,
+      "seconds": 6.0,
+      "width": 640,
+      "height": 480,
+      "rotation": 0
+    }
+  },
+  "estimated_api_cost_usd": 0.0,
+  "crops": {
+    "shipped": "shipped_crop.jpg",
+    "returned": "returned_crop.jpg"
+  }
+}

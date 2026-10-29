@@ -1,0 +1,155 @@
+{
+  "order_id": "FK-88316",
+  "status": "PACKING_NOT_PROVEN",
+  "headline": "Packing video does not prove the item was packed",
+  "reasons": [
+    "Packing: Item was seen, but never placed and kept inside the box (last seen outside at 05.97s)"
+  ],
+  "needs_review": [],
+  "packing": {
+    "events": {
+      "inserted": null,
+      "sealed": {
+        "frame": 150,
+        "time": "05.00s",
+        "seconds": 5.0
+      }
+    },
+    "checks": [
+      {
+        "name": "box_detected",
+        "passed": true,
+        "detail": "'cardboard box' tracked",
+        "time": null,
+        "seconds": null
+      },
+      {
+        "name": "item_inserted",
+        "passed": false,
+        "detail": "Item was seen, but never placed and kept inside the box (last seen outside at 05.97s)",
+        "time": "05.97s",
+        "seconds": 5.967
+      },
+      {
+        "name": "box_sealed",
+        "passed": true,
+        "detail": "Seal applied on the box at 05.00s",
+        "time": "05.00s",
+        "seconds": 5.0
+      },
+      {
+        "name": "inserted_before_sealed",
+        "passed": false,
+        "detail": "Can't confirm the item was packed before sealing",
+        "time": null,
+        "seconds": null
+      }
+    ],
+    "warnings": [],
+    "warning_marks": []
+  },
+  "return": {
+    "events": {
+      "seal_seen": {
+        "frame": 0,
+        "time": "00.00s",
+        "seconds": 0.0
+      },
+      "first_inside": {
+        "frame": 40,
+        "time": "01.33s",
+        "seconds": 1.333
+      },
+      "removed": {
+        "frame": 77,
+        "time": "02.57s",
+        "seconds": 2.567
+      }
+    },
+    "checks": [
+      {
+        "name": "box_detected",
+        "passed": true,
+        "detail": "'cardboard box' tracked",
+        "time": null,
+        "seconds": null
+      },
+      {
+        "name": "seal_on_arrival",
+        "passed": true,
+        "detail": "Seal visible on the box at 00.00s",
+        "time": "00.00s",
+        "seconds": 0.0
+      },
+      {
+        "name": "item_from_box",
+        "passed": true,
+        "detail": "Item seen inside the box at 01.33s, taken out at 02.57s",
+        "time": "01.33s",
+        "seconds": 1.333
+      }
+    ],
+    "warnings": [],
+    "warning_marks": []
+  },
+  "qr": {
+    "shipped": {
+      "CT-C5R1T": 0
+    },
+    "returned": {
+      "CT-C5R1T": 47
+    }
+  },
+  "visual_comparison": null,
+  "keyframes": {
+    "shipped": [
+      0,
+      39,
+      116,
+      71,
+      76,
+      137,
+      129,
+      177
+    ],
+    "returned": [
+      47,
+      43,
+      55,
+      45,
+      140,
+      51,
+      130,
+      157
+    ]
+  },
+  "sha256": {
+    "fault_pack.mp4": "49626e002243db48ccf49e82f75686e42f300f31008ea17dd615265191bb7a8c",
+    "fault_return.mp4": "142bf9aca67e0f9c3d3f6b030f4817bddd0c49b63381b58b69a32a78640c0c65"
+  },
+  "videos": {
+    "packing": {
+      "file": "fault_pack.mp4",
+      "fps": 30.0,
+      "n_frames": 180,
+      "seconds": 6.0,
+      "width": 640,
+      "height": 480,
+      "rotation": 0
+    },
+    "return": {
+      "file": "fault_return.mp4",
+      "fps": 30.0,
+      "n_frames": 180,
+      "seconds": 6.0,
+      "width": 640,
+      "height": 480,
+      "rotation": 0
+    }
+  },
+  "estimated_api_cost_usd": 0.0,
+  "crops": {
+    "shipped": "shipped_crop.jpg",
+    "returned": "returned_crop.jpg"
+  }
+}

@@ -46,10 +46,12 @@ def add_integrity_warnings(findings: VideoFindings, path: Path, box: Track, s: S
     for c in find_cuts(path, s):
         findings.warnings.append(
             f"Possible edit at {findings.t(c)}: the whole picture changed in one frame. Needs review.")
+        findings.warning_frames.append((c, "possible edit"))
     for a, b in box_gaps(box.main_object(), findings.fps):
         findings.warnings.append(
             f"Box not visible from {findings.t(a)} to {findings.t(b)} "
             "(hand in the way, or a cut). Needs review.")
+        findings.warning_frames.append((a, "box not visible"))
 
 
 def hashes(*paths: Path) -> dict[str, str]:

@@ -1,0 +1,7 @@
+{
+  "id": "swap",
+  "title": "Swap fraud",
+  "description": "A different unit with QR CT-B2M9Q and a red mark comes back.",
+  "source": "synthetic",
+  "expected": "SWAP_DETECTED"
+}

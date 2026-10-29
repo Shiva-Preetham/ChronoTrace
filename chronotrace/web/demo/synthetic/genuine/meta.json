@@ -1,0 +1,7 @@
+{
+  "id": "genuine",
+  "title": "Genuine return",
+  "description": "The same unit (QR CT-A7F3K) is packed, sealed, and comes back.",
+  "source": "synthetic",
+  "expected": "GENUINE_RETURN"
+}

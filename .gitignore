@@ -10,3 +10,5 @@ __pycache__/
 data/clips/*
 !data/clips/manifest.csv
 !data/clips/README.md
+!chronotrace/web/demo/synthetic/**/*.mp4
+chronotrace/web/demo/real/

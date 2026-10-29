@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChronoTrace</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --ink: #1d2330; --muted: #5d6675; --line: #dfe3ea;
+    --green: #237a3b; --green-bg: #e7f4ea; --red: #b42318; --red-bg: #fdecea;
+    --amber: #a15c07; --amber-bg: #fdf3e2; --grey: #4b5563; --grey-bg: #eef0f3;
+    --accent: #2457c5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { background: var(--card); border-bottom: 1px solid var(--line); }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+  header .wrap { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; padding-top: 14px; padding-bottom: 14px; }
+  h1 { font-size: 20px; margin: 0; }
+  .tag { color: var(--muted); }
+  main .wrap { padding-top: 18px; padding-bottom: 40px; display: grid; gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  h2 { font-size: 15px; margin: 0 0 10px; text-transform: none; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+
+  .scenarios { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .scenarios button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line);
+                      background: var(--card); color: var(--ink); cursor: pointer; }
+  .scenarios button:hover { border-color: var(--accent); }
+  .scenarios button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .source-note { margin-top: 8px; }
+
+  .banner { border-radius: 10px; padding: 14px 16px; border: 1px solid; }
+  .banner .status { font-weight: 700; font-size: 13px; letter-spacing: .03em; }
+  .banner .headline { font-size: 20px; font-weight: 600; margin: 2px 0; }
+  .banner ul { margin: 6px 0 0; padding-left: 20px; }
+  .s-green { background: var(--green-bg); border-color: #b6dcc0; color: var(--green); }
+  .s-red { background: var(--red-bg); border-color: #f2c3be; color: var(--red); }
+  .s-amber { background: var(--amber-bg); border-color: #efd3a6; color: var(--amber); }
+  .s-grey { background: var(--grey-bg); border-color: var(--line); color: var(--grey); }
+  .banner .headline, .banner li { color: var(--ink); }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  video { width: 100%; max-height: 360px; background: #111; border-radius: 6px; display: block; }
+  .timeline { position: relative; height: 34px; margin-top: 10px; }
+  .timeline .track { position: absolute; left: 0; right: 0; top: 15px; height: 4px; background: var(--line); border-radius: 2px; }
+  .timeline .playhead { position: absolute; top: 9px; width: 2px; height: 16px; background: var(--ink); opacity: .5; }
+  .marker { position: absolute; top: 7px; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%;
+            border: 2px solid #fff; cursor: pointer; padding: 0; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
+  .marker:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .m-good { background: var(--green); } .m-seal { background: var(--accent); }
+  .m-warn { background: var(--amber); } .m-out { background: #7c3aed; } .m-fail { background: var(--red); }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: 13px; }
+  .legend button { font: inherit; background: none; border: 0; padding: 0; cursor: pointer; color: var(--ink); text-align: left; }
+  .legend button:hover { text-decoration: underline; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+
+  .crop { width: 100%; height: 240px; object-fit: contain; background: #f0f2f5; border-radius: 6px; border: 1px solid var(--line); }
+  .noimg { display: grid; place-items: center; color: var(--muted); }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin-top: 8px; }
+  .kv dt { color: var(--muted); } .kv dd { margin: 0; }
+  code, .mono { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+
+  .checks { list-style: none; margin: 0; padding: 0; }
+  .checks li { display: grid; grid-template-columns: 76px 74px 1fr auto; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); align-items: baseline; }
+  .checks li:first-child { border-top: 0; }
+  .pill { font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 10px; text-align: center; }
+  .p-pass { background: var(--green-bg); color: var(--green); }
+  .p-fail { background: var(--red-bg); color: var(--red); }
+  .p-unknown { background: var(--grey-bg); color: var(--grey); }
+  .seek { font: inherit; font-size: 13px; background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; }
+  .notes { margin: 8px 0 0; padding-left: 20px; }
+
+  .hash { word-break: break-all; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .btn { display: inline-block; font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--ink);
+         background: var(--ink); color: #fff; text-decoration: none; cursor: pointer; }
+  .btn.secondary { background: var(--card); color: var(--ink); }
+  .card-img { width: 100%; max-width: 720px; border: 1px solid var(--line); border-radius: 6px; margin-top: 10px; }
+
+  form.upload { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  form.upload label { display: grid; gap: 4px; font-size: 14px; }
+  form.upload input[type=text] { font: inherit; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; }
+  form.upload .full { grid-column: 1 / -1; }
+  .msg { padding: 10px 12px; border-radius: 8px; }
+  [hidden] { display: none !important; }
+
+  @media (max-width: 760px) {
+    .two, form.upload { grid-template-columns: 1fr; }
+    .checks li { grid-template-columns: 64px 1fr; }
+    .checks li .side { grid-column: 2; grid-row: 1; }
+    .checks li .detail { grid-column: 1 / -1; }
+    .banner .headline { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>ChronoTrace</h1>
+    <span class="tag">Did the item that came back match the item that left?</span>
+  </div>
+</header>
+<main>
+  <div class="wrap">
+    <section class="card" aria-label="Scenarios">
+      <div class="scenarios" id="scenarios"></div>
+      <p class="source-note small muted" id="source-note"></p>
+    </section>
+
+    <section class="card" id="upload-card" hidden>
+      <h2>Upload your own</h2>
+      <p class="small muted" id="upload-status"></p>
+      <form class="upload" id="upload-form">
+        <label>Packing video (MP4 or MOV)<input type="file" name="packing" accept=".mp4,.mov,video/mp4,video/quicktime" required></label>
+        <label>Return-unboxing video (MP4 or MOV)<input type="file" name="returned" accept=".mp4,.mov,video/mp4,video/quicktime" required></label>
+        <label>Order id<input type="text" name="order_id" placeholder="FK-88314" maxlength="40"></label>
+        <label>Item (short noun phrase for SAM)<input type="text" name="item_prompt" placeholder="earbuds case" maxlength="60"></label>
+        <div class="full"><button class="btn" type="submit" id="upload-btn">Analyse</button></div>
+      </form>
+      <p class="msg s-grey small" id="upload-msg" hidden></p>
+    </section>
+
+    <div id="result" hidden>
+      <div style="display:grid; gap:16px">
+        <section class="banner" id="banner" aria-live="polite">
+          <div class="status" id="v-status"></div>
+          <div class="headline" id="v-headline"></div>
+          <div class="small muted" id="v-order"></div>
+          <ul id="v-reasons"></ul>
+        </section>
+
+        <section class="two">
+          <div class="card">
+            <h2>Packing video (seller)</h2>
+            <video id="vid-packing" controls muted playsinline preload="metadata"></video>
+            <div class="timeline" id="tl-packing"></div>
+            <div class="legend" id="lg-packing"></div>
+          </div>
+          <div class="card">
+            <h2>Return video (buyer)</h2>
+            <video id="vid-return" controls muted playsinline preload="metadata"></video>
+            <div class="timeline" id="tl-return"></div>
+            <div class="legend" id="lg-return"></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Identity</h2>
+          <div class="two">
+            <div>
+              <div class="small muted">Shipped item (sharpest frame before packing)</div>
+              <div id="crop-shipped"></div>
+              <dl class="kv"><dt>QR read</dt><dd id="qr-shipped" class="mono"></dd></dl>
+            </div>
+            <div>
+              <div class="small muted">Returned item (sharpest frame after unboxing)</div>
+              <div id="crop-returned"></div>
+              <dl class="kv"><dt>QR read</dt><dd id="qr-returned" class="mono"></dd></dl>
+            </div>
+          </div>
+          <div id="spark" style="margin-top:14px"></div>
+        </section>
+
+        <section class="card">
+          <h2>Checks</h2>
+          <ul class="checks" id="checks"></ul>
+          <div id="review-wrap" hidden>
+            <h2 style="margin-top:14px">Needs review</h2>
+            <ul class="notes" id="review"></ul>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Evidence</h2>
+          <dl class="kv" id="hashes"></dl>
+          <p class="small muted">SHA-256 of the files as analysed. The players above use re-encoded copies so they play in a browser.</p>
+          <div class="actions">
+            <a class="btn" id="dl-report" download="report.json">Download report.json</a>
+            <a class="btn secondary" id="dl-card" download="evidence_card.png">Download evidence_card.png</a>
+          </div>
+          <img class="card-img" id="card-img" alt="Evidence card built from real frames">
+        </section>
+      </div>
+    </div>
+    <p class="msg s-red" id="error" hidden></p>
+  </div>
+</main>
+<script>
+const STATUS_CLASS = {
+  GENUINE_RETURN: "s-green", RETURNED_WITH_DAMAGE: "s-amber", SWAP_DETECTED: "s-red",
+  SWAP_LIKELY: "s-red", PACKING_NOT_PROVEN: "s-amber", NEEDS_REVIEW: "s-grey",
+};
+const CHECK_LABEL = {
+  box_detected: "Box tracked", item_inserted: "Item put in the box", box_sealed: "Box sealed",
+  inserted_before_sealed: "Packed before sealing", not_removed_after_seal: "Not taken out after sealing",
+  seal_on_arrival: "Seal intact on arrival", item_from_box: "Item came out of the box",
+  order_id_spoken: "Spoken order id",
+};
+const MARKERS = {
+  packing: [["inserted", "Item in box", "m-good"], ["sealed", "Sealed", "m-seal"]],
+  return: [["seal_seen", "Seal on arrival", "m-seal"], ["first_inside", "Item seen in box", "m-good"],
+           ["removed", "Item taken out", "m-out"]],
+};
+const $ = (id) => document.getElementById(id);
+const el = (tag, attrs = {}, text) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (text !== undefined) e.textContent = text;
+  return e;
+};
+const fmt = (s) => `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, "0")}`;
+
+function seek(role, seconds) {
+  const v = $(`vid-${role}`);
+  v.currentTime = seconds;
+  v.pause();
+  v.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+function drawTimeline(role, findings, video) {
+  const tl = $(`tl-${role}`), lg = $(`lg-${role}`);
+  tl.replaceChildren(el("div", { class: "track" }));
+  lg.replaceChildren();
+  const dur = (video && video.seconds) || 1;
+  const marks = [];
+  for (const [key, label, cls] of MARKERS[role]) {
+    const ev = findings.events[key];
+    if (ev) marks.push({ s: ev.seconds, label, cls });
+  }
+  for (const c of findings.checks) {
+    if (c.passed === false && c.seconds !== null && c.seconds !== undefined)
+      marks.push({ s: c.seconds, label: `Failed: ${CHECK_LABEL[c.name] || c.name}`, cls: "m-fail" });
+  }
+  for (const w of findings.warning_marks || []) marks.push({ s: w.seconds, label: `Warning: ${w.label}`, cls: "m-warn" });
+  marks.sort((a, b) => a.s - b.s);
+  for (const m of marks) {
+    const pct = Math.min(100, Math.max(0, (m.s / dur) * 100));
+    const b = el("button", { class: `marker ${m.cls}`, style: `left:${pct}%`, title: `${m.label} at ${fmt(m.s)}`,
+                             "aria-label": `${m.label} at ${fmt(m.s)}, jump to it` });
+    b.onclick = () => seek(role, m.s);
+    tl.appendChild(b);
+    const li = el("button", {}, "");
+    li.append(el("span", { class: `dot ${m.cls}` }), `${m.label} ${fmt(m.s)}`);
+    li.onclick = () => seek(role, m.s);
+    lg.appendChild(li);
+  }
+  if (!marks.length) lg.append(el("span", { class: "muted" }, "No events found in this video."));
+  const head = el("div", { class: "playhead", style: "left:0%" });
+  tl.appendChild(head);
+  const v = $(`vid-${role}`);
+  v.ontimeupdate = () => { head.style.left = `${Math.min(100, (v.currentTime / dur) * 100)}%`; };
+}
+
+function cropBox(id, url) {
+  const box = $(id);
+  box.replaceChildren(url ? el("img", { class: "crop", src: url, alt: "Item crop from the video" })
+                          : el("div", { class: "crop noimg" }, "No clear frame of the item"));
+}
+
+function qrText(qr) {
+  const codes = Object.keys(qr || {});
+  return codes.length ? codes.join(", ") : "none read";
+}
+
+function renderSpark(vc) {
+  const box = $("spark");
+  box.replaceChildren(el("h2", {}, "Visual comparison (Muse Spark)"));
+  if (!vc) {
+    box.append(el("p", { class: "small muted" }, "Muse Spark was not run for this case. Identity comes from the QR codes only."));
+    return;
+  }
+  const dl = el("dl", { class: "kv" });
+  const add = (k, v) => { dl.append(el("dt", {}, k), el("dd", {}, v)); };
+  add("Same unit", vc.same_unit);
+  add("Differences", (vc.visible_differences || []).join("; ") || "none listed");
+  add("Shipped condition", vc.condition_shipped || "");
+  add("Returned condition", vc.condition_returned || "");
+  add("New damage", vc.new_damage_on_return ? "yes" : "no");
+  add("Explanation", vc.explanation || "");
+  if (vc.model) add("Model", vc.model);
+  box.append(dl, el("p", { class: "small muted" }, "Model output is evidence only. The verdict comes from fixed rules."));
+}
+
+function renderChecks(rep) {
+  const ul = $("checks");
+  ul.replaceChildren();
+  for (const [role, side] of [["packing", "Packing"], ["return", "Return"]]) {
+    for (const c of rep[role].checks) {
+      const state = c.passed === true ? "pass" : c.passed === false ? "fail" : "unknown";
+      const li = el("li");
+      li.append(el("span", { class: `pill p-${state}` }, state));
+      li.append(el("span", { class: "side small muted" }, side));
+      const d = el("span", { class: "detail" });
+      d.append(el("strong", {}, CHECK_LABEL[c.name] || c.name), ` ${c.detail}`);
+      li.append(d);
+      if (c.seconds !== null && c.seconds !== undefined) {
+        const b = el("button", { class: "seek", "aria-label": `Jump to ${fmt(c.seconds)} in the ${role} video` }, fmt(c.seconds));
+        b.onclick = () => seek(role, c.seconds);
+        li.append(b);
+      } else li.append(el("span"));
+      ul.append(li);
+    }
+  }
+  const notes = rep.needs_review || [];
+  $("review-wrap").hidden = !notes.length;
+  $("review").replaceChildren(...notes.map((n) => el("li", {}, n)));
+}
+
+function render(data) {
+  const { meta, report: rep, assets } = data;
+  $("error").hidden = true;
+  $("result").hidden = false;
+  const banner = $("banner");
+  banner.className = `banner ${STATUS_CLASS[rep.status] || "s-grey"}`;
+  $("v-status").textContent = rep.status.replaceAll("_", " ");
+  $("v-headline").textContent = rep.headline;
+  $("v-order").textContent = `Order ${rep.order_id}`;
+  $("v-reasons").replaceChildren(...rep.reasons.map((r) => el("li", {}, r)));
+
+  for (const role of ["packing", "return"]) {
+    const v = $(`vid-${role}`);
+    v.src = assets[`${role}_video`];
+    drawTimeline(role, rep[role], (rep.videos || {})[role]);
+  }
+  cropBox("crop-shipped", assets.crops.shipped);
+  cropBox("crop-returned", assets.crops.returned);
+  $("qr-shipped").textContent = qrText(rep.qr.shipped);
+  $("qr-returned").textContent = qrText(rep.qr.returned);
+  renderSpark(rep.visual_comparison);
+  renderChecks(rep);
+
+  const h = $("hashes");
+  h.replaceChildren();
+  for (const [name, digest] of Object.entries(rep.sha256)) h.append(el("dt", {}, name), el("dd", { class: "mono hash" }, digest));
+  $("dl-report").href = assets.report;
+  $("dl-card").hidden = !assets.evidence_card;
+  $("card-img").hidden = !assets.evidence_card;
+  if (assets.evidence_card) { $("dl-card").href = assets.evidence_card; $("card-img").src = assets.evidence_card; }
+}
+
+function showError(msg) {
+  $("error").textContent = msg;
+  $("error").hidden = false;
+}
+
+async function getJSON(url, opts) {
+  const r = await fetch(url, opts);
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.detail || `Request failed (${r.status})`);
+  return body;
+}
+
+function press(id) {
+  for (const b of $("scenarios").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.id === id));
+}
+
+async function loadCase(id) {
+  press(id);
+  $("upload-card").hidden = true;
+  try { render(await getJSON(`/api/cases/${encodeURIComponent(id)}`)); history.replaceState(null, "", `#${id}`); }
+  catch (e) { showError(e.message); }
+}
+
+async function init() {
+  let cases = [];
+  try { cases = await getJSON("/api/cases"); } catch (e) { showError(e.message); return; }
+  const bar = $("scenarios");
+  for (const c of cases) {
+    const b = el("button", { type: "button", "data-id": c.id, "aria-pressed": "false", title: c.description }, c.title);
+    b.onclick = () => loadCase(c.id);
+    bar.append(b);
+  }
+  const up = el("button", { type: "button", "data-id": "__upload", "aria-pressed": "false" }, "Upload your own");
+  up.onclick = () => { press("__upload"); $("upload-card").hidden = false; $("upload-card").scrollIntoView({ block: "nearest" }); };
+  bar.append(up);
+  const synthetic = cases.length && cases.every((c) => c.source === "synthetic");
+  $("source-note").textContent = synthetic
+    ? "These scenarios use generated clips with simulated tracking in place of SAM, so they load without any API call. They show how the checks work; they are not real footage."
+    : "Preloaded cases load from saved reports, with no API call.";
+
+  try {
+    const st = await getJSON("/api/status");
+    $("upload-status").textContent = st.api_key_set
+      ? "Runs SAM 3.1 on both videos (one request per concept) and Muse Spark on the best crops. This can take a few minutes."
+      : "This server has no MODEL_API_KEY set, so uploads can't be analysed. The preloaded scenarios still work.";
+    $("upload-btn").disabled = !st.api_key_set;
+  } catch (_) { /* status is optional */ }
+
+  const want = decodeURIComponent(location.hash.slice(1));
+  const first = cases.find((c) => c.id === want) || cases[0];
+  if (first) loadCase(first.id);
+}
+
+$("upload-form").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const msg = $("upload-msg");
+  msg.hidden = false; msg.className = "msg s-grey small";
+  msg.textContent = "Uploading and analysing. Keep this page open.";
+  $("upload-btn").disabled = true;
+  try {
+    const data = await getJSON("/api/verify", { method: "POST", body: new FormData(ev.target) });
+    msg.hidden = true;
+    render(data);
+    $("banner").scrollIntoView({ block: "start", behavior: "smooth" });
+  } catch (e) {
+    msg.className = "msg s-red small";
+    msg.textContent = e.message;
+  } finally { $("upload-btn").disabled = false; }
+});
+
+window.addEventListener("hashchange", () => {
+  const id = decodeURIComponent(location.hash.slice(1));
+  const b = [...$("scenarios").querySelectorAll("button")].find((x) => x.dataset.id === id);
+  if (b && b.getAttribute("aria-pressed") !== "true") loadCase(id);
+});
+
+init();
+</script>
+</body>
+</html>

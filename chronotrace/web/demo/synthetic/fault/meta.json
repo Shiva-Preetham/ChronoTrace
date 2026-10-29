@@ -1,0 +1,7 @@
+{
+  "id": "fault",
+  "title": "Seller at fault",
+  "description": "The seller shows the item but tapes the box without putting it in.",
+  "source": "synthetic",
+  "expected": "PACKING_NOT_PROVEN"
+}

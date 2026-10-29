@@ -59,8 +59,13 @@ def run(packing: Path, returned: Path, order_id: str, s: Settings, sam: CachedSa
 
     v = decide(pack, ret, qr_a, qr_b, spark_result)
     spend = sam.estimated_spend + (getattr(spark, "estimated_spend", 0.0) or 0.0)
+    videos = {role: {"file": p.name, "fps": vi.fps, "n_frames": vi.n_frames,
+                     "seconds": round(vi.seconds, 3), "width": vi.width, "height": vi.height,
+                     "rotation": vi.rotation}
+              for role, p, vi in (("packing", packing, vi_a), ("return", returned, vi_b))}
     rep = evidence.report(v, order_id, pack, ret, qr_a, qr_b, spark_result,
-                          integrity.hashes(packing, returned), spend, kf_a, kf_b)
+                          integrity.hashes(packing, returned), spend, kf_a, kf_b, videos)
+    rep["crops"] = evidence.save_crops(kf_a, kf_b, s.out_dir)
     report_path = evidence.save(rep, s.out_dir)
     card_path = evidence.card(v, order_id, pack, ret, kf_a, kf_b, qr_a, qr_b,
                               s.out_dir / "evidence_card.png")
